@@ -1,18 +1,24 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
+// buzzer config
 #define pinBuzzer 25
-
-// setting PWM properties
 const int freq = 1000;// [1-1000]Hz
 const int ledChannel = 0;
 const int resolution = 8;
 
+// wifi config
 const char* ssid = "TE_HACKEL_EL_INTER";
 const char* password = "QWE&ASD%ZXC#!!";
-const char* mqtt_server = "wss://broker.vakalan.com:8084/mqtt";
-const char* topic_publish = "564963785";
-const char* topic_suscribe = "";
+
+// mqtt config
+const char* mqtt_server = "broker.vakalan.com";
+const char* topic_publish = "12345567";
+//const char* topic_publish = "564963785";
+const char* topic_suscribe = "+/#";
+//const char* topic_suscribe = "v1/iris/client1/deviceId/res";
+//const char* topic_suscribe = "v1/iris/client1/deviceId/#";
+const char* client_id = "mqttjs_f52d492669";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -49,13 +55,15 @@ void loop() {
   long now = millis();
   if (now - lastMsg > 5000) {
     lastMsg = now;
-    client.publish(topic_publish,
-                   "{"
-                   "\"gps\":{\"lat\":\"-12.09\",\"lng\":\"-77.05\"},"
-                   "\"acc\":{\"x\":\"-1.59\",\"y\":\"0.08\",\"z\":\"10.22\"},"
-                   "\"gyro\":{\"x\":\"-5.05\",\"y\":\"0.75\",\"z\":\"0.26\"}"
-                   "}"
-                  );
+    bool publish_success = client.publish(topic_publish,
+                                          "{"
+                                          "\"gps\":{\"lat\":\"-12.09\",\"lng\":\"-77.05\"},"
+                                          "\"acc\":{\"x\":\"-1.59\",\"y\":\"0.08\",\"z\":\"10.22\"},"
+                                          "\"gyro\":{\"x\":\"-5.05\",\"y\":\"0.75\",\"z\":\"0.26\"}"
+                                          "}"
+                                         );
+    Serial.print("Publicacion res:");
+    Serial.println(publish_success ? "OK" : "FAILED");
   }
 }
 
@@ -81,10 +89,18 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP32Client")) {
+    if (client.connect(client_id)) {
       Serial.println("connected");
       // Subscribe
-      client.subscribe("esp32/output");
+      //client.subscribe(topic_michi);
+      bool subscribe_success = client.subscribe(topic_suscribe);
+      //client.subscribe(topic_publish);
+      if (subscribe_success) {
+        Serial.println("subscribe successfull");
+      }
+      else {
+        Serial.println("subscribe failed");
+      }
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
